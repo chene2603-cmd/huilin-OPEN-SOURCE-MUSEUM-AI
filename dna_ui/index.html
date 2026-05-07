@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 AI文物情感交互系统DNA - 控制中心</title>
+    <link rel="stylesheet" href="museum_ai.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="dna-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-dna"></i>
+                    <h1>AI文物情感交互系统DNA</h1>
+                    <span class="version">v1.2</span>
+                </div>
+                <div class="header-info">
+                    <div class="status-indicator" id="systemStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">正在检查...</span>
+                    </div>
+                    <div class="time-display" id="currentTime"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container">
+        <div class="dashboard">
+            <!-- 左侧：系统概览 -->
+            <div class="sidebar">
+                <div class="card overview-card">
+                    <h2><i class="fas fa-brain"></i> 系统概览</h2>
+                    <div class="health-score" id="healthScore">
+                        <div class="score-circle">
+                            <svg width="120" height="120">
+                                <circle class="score-bg" cx="60" cy="60" r="54"></circle>
+                                <circle class="score-progress" cx="60" cy="60" r="54"></circle>
+                            </svg>
+                            <div class="score-text">
+                                <span class="score-value">--</span>
+                                <span class="score-label">/100</span>
+                            </div>
+                        </div>
+                        <div class="score-info">
+                            <h3 id="healthGrade">正在评估</h3>
+                            <p id="healthRecommendation">请稍候...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="module-status">
+                        <h3><i class="fas fa-microchip"></i> 模块状态</h3>
+                        <div class="module-list" id="moduleStatusList">
+                            <!-- 动态加载模块状态 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card quick-actions-card">
+                    <h2><i class="fas fa-bolt"></i> 快速操作</h2>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="startSystem()">
+                            <i class="fas fa-play"></i> 启动系统
+                        </button>
+                        <button class="btn btn-warning" onclick="restartSystem()">
+                            <i class="fas fa-redo"></i> 重启系统
+                        </button>
+                        <button class="btn btn-danger" onclick="stopSystem()">
+                            <i class="fas fa-stop"></i> 停止系统
+                        </button>
+                        <button class="btn btn-info" onclick="runHealthCheck()">
+                            <i class="fas fa-stethoscope"></i> 健康检查
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：监控面板 -->
+            <div class="main-content">
+                <div class="card monitoring-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-line"></i> 实时监控</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-sm" onclick="refreshMonitoring()">
+                                <i class="fas fa-sync-alt"></i> 刷新
+                            </button>
+                            <button class="btn btn-sm" onclick="toggleAutoRefresh()">
+                                <i class="fas fa-clock"></i> 自动刷新
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="monitoring-grid">
+                        <!-- CPU/GPU监控 -->
+                        <div class="metric-card">
+                            <h3><i class="fas fa-microchip"></i> CPU使用率</h3>
+                            <div class="metric-value" id="cpuUsage">--%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="cpuProgress"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3><i class="fas fa-gamepad"></i> GPU使用率</h3>
+                            <div class="metric-value" id="gpuUsage">--%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="gpuProgress"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 内存监控 -->
+                        <div class="metric-card">
+                            <h3><i class="fas fa-memory"></i> 内存使用</h3>
+                            <div class="metric-value" id="memoryUsage">-- MB</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="memoryProgress"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3><i class="fas fa-database"></i> 向量数据库</h3>
+                            <div class="metric-value" id="vectorDbStatus">检查中</div>
+                            <div class="metric-label" id="vectorDbInfo">连接状态</div>
+                        </div>
+                        
+                        <!-- API监控 -->
+                        <div class="metric-card">
+                            <h3><i class="fas fa-bolt"></i> API响应时间</h3>
+                            <div class="metric-value" id="apiResponseTime">-- ms</div>
+                            <div class="metric-label" id="apiStatus">延迟</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3><i class="fas fa-comments"></i> 活动对话</h3>
+                            <div class="metric-value" id="activeConversations">0</div>
+                            <div class="metric-label">当前进行中</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 实时图表 -->
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 补丁管理 -->
+                <div class="card patches-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-puzzle-piece"></i> 补丁管理</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-success" onclick="scanForPatches()">
+                                <i class="fas fa-search"></i> 扫描补丁
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="generatePatch()">
+                                <i class="fas fa-magic"></i> 生成补丁
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="patches-tabs">
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchPatchTab('applied')">已应用</button>
+                            <button class="tab" onclick="switchPatchTab('available')">可用补丁</button>
+                            <button class="tab" onclick="switchPatchTab('auto-fix')">自动修复</button>
+                        </div>
+                        
+                        <div class="tab-content active" id="appliedPatches">
+                            <!-- 已应用补丁列表 -->
+                            <div class="patches-list" id="appliedPatchesList">
+                                <div class="empty-state">
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>暂无已应用的补丁</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="availablePatches">
+                            <!-- 可用补丁列表 -->
+                            <div class="patches-list" id="availablePatchesList">
+                                <div class="empty-state">
+                                    <i class="fas fa-box-open"></i>
+                                    <p>没有可用的补丁</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="autoFixTab">
+                            <!-- 自动修复界面 -->
+                            <div class="auto-fix-container">
+                                <div class="scan-section">
+                                    <h3><i class="fas fa-search"></i> 扫描系统问题</h3>
+                                    <p>自动检测系统问题并生成修复补丁</p>
+                                    <button class="btn btn-primary" onclick="runAutoScan()">
+                                        <i class="fas fa-search"></i> 开始扫描
+                                    </button>
+                                </div>
+                                
+                                <div class="results-section" id="scanResults" style="display: none;">
+                                    <h3><i class="fas fa-clipboard-list"></i> 扫描结果</h3>
+                                    <div class="issues-list" id="issuesList"></div>
+                                    
+                                    <div class="auto-fix-actions">
+                                        <button class="btn btn-success" onclick="applyAllFixes()">
+                                            <i class="fas fa-wand-magic-sparkles"></i> 一键修复所有问题
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：日志和通知 -->
+            <div class="sidebar">
+                <div class="card logs-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-scroll"></i> 实时日志</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-sm" onclick="clearLogs()">
+                                <i class="fas fa-trash"></i> 清空
+                            </button>
+                            <button class="btn btn-sm" onclick="exportLogs()">
+                                <i class="fas fa-download"></i> 导出
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="logs-filter">
+                        <select id="logLevelFilter" onchange="filterLogs()">
+                            <option value="all">所有级别</option>
+                            <option value="error">错误</option>
+                            <option value="warning">警告</option>
+                            <option value="info">信息</option>
+                            <option value="debug">调试</option>
+                        </select>
+                        
+                        <select id="logModuleFilter" onchange="filterLogs()">
+                            <option value="all">所有模块</option>
+                            <!-- 动态加载模块选项 -->
+                        </select>
+                    </div>
+                    
+                    <div class="logs-container" id="logsContainer">
+                        <!-- 日志动态加载 -->
+                        <div class="log-entry error">
+                            <span class="log-time">12:00:00</span>
+                            <span class="log-module">SYSTEM</span>
+                            <span class="log-level">ERROR</span>
+                            <span class="log-message">系统初始化完成</span>
+                        </div>
+                    </div>
+                    
+                    <div class="logs-controls">
+                        <button class="btn btn-sm" onclick="pauseLogs()">
+                            <i class="fas fa-pause"></i> 暂停
+                        </button>
+                        <div class="log-count">
+                            显示 <span id="logCount">0</span> 条日志
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card notifications-card">
+                    <h2><i class="fas fa-bell"></i> 系统通知</h2>
+                    <div class="notifications-list" id="notificationsList">
+                        <!-- 通知动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="dna-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <p>🧬 DNA编码: <strong>OPEN_SOURCE_MUSEUM_AI_V1.2</strong></p>
+                    <p>👨💻 架构师: 元宝(腾讯数字文博架构师)</p>
+                </div>
+                <div class="footer-right">
+                    <p>📅 系统时间: <span id="systemTime">--:--:--</span></p>
+                    <p>🏥 最后健康检查: <span id="lastHealthCheck">--:--:--</span></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="ethics-notice">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    此为AI基于文物历史的创意演绎，内容仅供参考
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 模态框 -->
+    <div class="modal" id="patchModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>补丁详情</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="patchModalBody">
+                <!-- 动态加载补丁详情 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="museum_ai.js"></script>
+    <script src="nfc_handler.js"></script>
+</body>
+</html>
