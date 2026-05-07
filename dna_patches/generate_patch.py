@@ -595,3 +595,181 @@ def patch_{module}_{function}(original_func):
                     validated_args.append(arg)
             
             args = tuple(validated_args)
+            
+            # 添加额外参数
+            if "enhanced" not in kwargs:
+                kwargs["enhanced"] = True
+                logger.debug("添加增强参数")
+            '''
+            
+            post_processing = '''
+            # 新功能：结果增强
+            if isinstance(result, dict):
+                result["_enhanced_by_patch"] = True
+                result["_patch_version"] = "1.0.0"
+                result["_execution_timestamp"] = datetime.now().isoformat()
+            elif isinstance(result, list):
+                result = [{
+                    "data": item,
+                    "enhanced": True
+                } for item in result]
+            '''
+            
+            extra_methods = '''
+    def get_feature_info():
+        """获取新功能信息"""
+        return {
+            "name": "新功能补丁",
+            "version": "1.0.0",
+            "description": "{description}",
+            "config": NEW_FEATURE_CONFIG
+        }
+    
+    wrapped_func.get_feature_info = get_feature_info
+    
+    def enable_feature(enabled: bool = True):
+        """启用或禁用新功能"""
+        NEW_FEATURE_CONFIG["enabled"] = enabled
+        logger.info(f"新功能{'启用' if enabled else '禁用'}")
+    
+    wrapped_func.enable_feature = enable_feature
+            '''.format(description=req_analysis["original_requirement"])
+        
+        else:
+            pre_processing = "# 默认前置处理"
+            post_processing = "# 默认后置处理"
+            extra_methods = "# 无额外方法"
+        
+        code = template.format(
+            module=target_module,
+            function=target_function,
+            description=req_analysis["original_requirement"],
+            category=req_analysis["category"],
+            keywords=", ".join(req_analysis["keywords"]),
+            pre_processing=pre_processing,
+            post_processing=post_processing,
+            extra_methods=extra_methods
+        )
+        
+        return code
+    
+    def save_patch(self, 
+                  patch_code: str, 
+                  patch_info: Dict[str, Any]) -> str:
+        """保存补丁到文件"""
+        # 生成补丁ID
+        patch_id = hashlib.md5(patch_code.encode()).hexdigest()[:16]
+        
+        # 创建完整补丁文件
+        full_patch = f'''"""
+{patch_info.get('description', '自动生成的补丁')}
+
+PATCH_INFO:
+  name: "{patch_info.get('name', 'unnamed_patch')}"
+  version: "{patch_info.get('version', '1.0.0')}"
+  description: "{patch_info.get('description', '')}"
+  author: "{patch_info.get('author', 'ai_patch_generator')}"
+  created_at: "{patch_info.get('created_at', datetime.now().isoformat())}"
+  target_module: "{patch_info.get('target_module', 'unknown')}"
+  target_function: "{patch_info.get('target_function', 'unknown')}"
+  priority: {patch_info.get('priority', 3)}
+  dependencies: {json.dumps(patch_info.get('dependencies', []), ensure_ascii=False)}
+  compatibility: {json.dumps(patch_info.get('compatibility', ['OPEN_SOURCE_MUSEUM_AI_V1.2']), ensure_ascii=False)}
+  rollback_supported: {str(patch_info.get('rollback_supported', True)).lower()}
+"""
+
+{patch_code}
+
+if __name__ == "__main__":
+    print("补丁文件生成完成")
+    print(f"补丁ID: {patch_id}")
+    print(f"目标: {{patch_info.get('target_module')}}.{{patch_info.get('target_function')}}")
+'''
+        
+        # 保存文件
+        patch_file = self.template_dir / f"patch_{patch_id}.py"
+        with open(patch_file, 'w', encoding='utf-8') as f:
+            f.write(full_patch)
+        
+        logger.info(f"补丁已保存: {patch_file}")
+        
+        return str(patch_file)
+
+def main():
+    """命令行界面"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="智能补丁生成器")
+    parser.add_argument("--from-error", type=str, help="从错误日志生成补丁")
+    parser.add_argument("--from-requirement", type=str, help="从需求描述生成补丁")
+    parser.add_argument("--target-module", type=str, help="目标模块名")
+    parser.add_argument("--target-function", type=str, help="目标函数名")
+    parser.add_argument("--target-code", type=str, help="目标代码文件")
+    parser.add_argument("--output", type=str, help="输出文件")
+    
+    args = parser.parse_args()
+    
+    generator = PatchGenerator()
+    
+    if args.from_error and args.target_code:
+        # 从错误日志生成
+        with open(args.from_error, 'r', encoding='utf-8') as f:
+            error_log = json.load(f)
+        
+        with open(args.target_code, 'r', encoding='utf-8') as f:
+            target_code = f.read()
+        
+        result = generator.generate_from_error_log(error_log, target_code)
+        
+        if result['success']:
+            print("✅ 补丁生成成功！")
+            print(f"错误分析: {result['error_analysis']}")
+            
+            # 保存补丁
+            if args.output:
+                patch_file = generator.save_patch(
+                    result['patch_code'],
+                    result['patch_info']
+                )
+                print(f"📁 补丁已保存: {patch_file}")
+            else:
+                print("\n生成的补丁代码:")
+                print("-" * 60)
+                print(result['patch_code'][:1000] + "..." if len(result['patch_code']) > 1000 else result['patch_code'])
+        else:
+            print(f"❌ 补丁生成失败: {result['error']}")
+    
+    elif args.from_requirement and args.target_module and args.target_function:
+        # 从需求生成
+        result = generator.generate_from_requirement(
+            args.from_requirement,
+            args.target_module,
+            args.target_function
+        )
+        
+        if result['success']:
+            print("✅ 补丁生成成功！")
+            print(f"需求分析: {result['requirement_analysis']}")
+            
+            # 保存补丁
+            if args.output:
+                patch_file = generator.save_patch(
+                    result['patch_code'],
+                    result['patch_info']
+                )
+                print(f"📁 补丁已保存: {patch_file}")
+            else:
+                print("\n生成的补丁代码:")
+                print("-" * 60)
+                print(result['patch_code'][:1000] + "..." if len(result['patch_code']) > 1000 else result['patch_code'])
+        else:
+            print(f"❌ 补丁生成失败: {result['error']}")
+    
+    else:
+        parser.print_help()
+        print("\n示例:")
+        print("  从错误日志生成: --from-error error.json --target-code module.py")
+        print("  从需求生成: --from-requirement '优化性能' --target-module brain --target-function process")
+
+if __name__ == "__main__":
+    main()
