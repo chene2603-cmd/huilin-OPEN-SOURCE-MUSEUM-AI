@@ -548,4 +548,141 @@ class LogAnalyzer:
             "low": 2
         }
         
-        for severity, issues in r
+        for severity, issues in report.get("detailed_issues", {}).items():
+            penalty = severity_penalties.get(severity, 0)
+            base_score -= len(issues) * penalty
+        
+        # 根据响应时间扣分
+        for metric_name, stats in report.get("performance_metrics", {}).items():
+            if "response_time" in metric_name:
+                avg_time = stats.get("avg", 0)
+                if avg_time > 5000:  # 5秒
+                    base_score -= 10
+                elif avg_time > 3000:  # 3秒
+                    base_score -= 5
+        
+        # 确保分数在0-100之间
+        health_score = max(0, min(100, base_score))
+        
+        # 确定等级
+        if health_score >= 90:
+            grade = "优秀"
+        elif health_score >= 70:
+            grade = "良好"
+        elif health_score >= 50:
+            grade = "一般"
+        else:
+            grade = "需要关注"
+        
+        return {
+            "score": health_score,
+            "grade": grade,
+            "timestamp": datetime.now().isoformat(),
+            "report_reference": report.get("timestamp"),
+            "recommendations": self._get_recommendations_by_score(health_score)
+        }
+    
+    def _get_recommendations_by_score(self, score: float) -> List[str]:
+        """根据分数获取建议"""
+        if score >= 90:
+            return [
+                "系统运行状态优秀，继续保持",
+                "考虑进行性能优化以提升用户体验"
+            ]
+        elif score >= 70:
+            return [
+                "系统运行状态良好，但有改进空间",
+                "关注警告级别的问题，防止升级为错误"
+            ]
+        elif score >= 50:
+            return [
+                "系统运行状态一般，需要关注",
+                "立即处理高优先级问题",
+                "检查系统资源配置是否充足"
+            ]
+        else:
+            return [
+                "系统运行状态不佳，需要立即处理",
+                "优先处理严重和高优先级错误",
+                "检查系统依赖服务是否正常",
+                "考虑回滚到稳定版本"
+            ]
+
+def main():
+    """主函数"""
+    parser = argparse.ArgumentParser(description="AI文物情感交互系统DNA - 日志分析器")
+    parser.add_argument("--hours", type=int, default=24, help="分析最近多少小时的日志")
+    parser.add_argument("--output", type=str, default="console", choices=["console", "json", "both"], 
+                       help="输出格式")
+    parser.add_argument("--check-repeating", action="store_true", help="检查重复错误")
+    parser.add_argument("--health-score", action="store_true", help="计算系统健康评分")
+    parser.add_argument("--auto-fix", action="store_true", help="尝试自动修复可自动修复的问题")
+    
+    args = parser.parse_args()
+    
+    analyzer = LogAnalyzer()
+    
+    if args.check_repeating:
+        print("🔍 检查重复出现的错误...")
+        repeating_errors = analyzer.find_repeating_errors()
+        
+        if repeating_errors:
+            print(f"发现 {len(repeating_errors)} 个重复错误:")
+            for error in repeating_errors:
+                print(f"\n❌ {error['module']}:")
+                print(f"   次数: {error['count']}")
+                print(f"   首次: {error['first_occurrence']}")
+                print(f"   末次: {error['last_occurrence']}")
+                print(f"   示例: {error['sample_message']}")
+        else:
+            print("✅ 未发现重复错误")
+    
+    elif args.health_score:
+        print("🏥 计算系统健康评分...")
+        health_info = analyzer.generate_health_score()
+        
+        print(f"\n健康评分: {health_info['score']}/100")
+        print(f"等级: {health_info['grade']}")
+        print(f"时间: {health_info['timestamp']}")
+        print("\n建议:")
+        for i, rec in enumerate(health_info['recommendations'], 1):
+            print(f"{i}. {rec}")
+    
+    else:
+        # 运行标准分析
+        report = analyzer.analyze_logs(hours=args.hours)
+        
+        if args.output in ["json", "both"]:
+            # 保存JSON格式报告
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            json_file = analyzer.log_dir / f"dna_analysis_{timestamp}.json"
+            with open(json_file, 'w', encoding='utf-8') as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
+            print(f"📁 JSON报告已保存: {json_file}")
+        
+        if args.output in ["console", "both"] and report:
+            # 控制台输出摘要
+            print(f"\n{'='*60}")
+            print(f"🧬 DNA系统健康状态: {report['overall_status'].upper()}")
+            print(f"{'='*60}")
+            
+            if report.get('needs_attention'):
+                print("🔴 需要关注的模块:")
+                for module, count in report['issue_summary']['by_module'].items():
+                    if count > 0:
+                        print(f"  {module}: {count} 个问题")
+            
+            # 显示最紧急的问题
+            for severity in ['critical', 'high']:
+                if severity in report['detailed_issues'] and report['detailed_issues'][severity]:
+                    print(f"\n⚠️ {severity.upper()}级别问题:")
+                    for issue in report['detailed_issues'][severity][:3]:
+                        print(f"  - {issue['module']}: {issue['message'][:80]}...")
+    
+    if args.auto_fix:
+        print("\n🔄 尝试自动修复...")
+        # 这里可以集成自动修复逻辑
+        print("自动修复功能开发中，请手动处理问题")
+
+if __name__ == "__main__":
+    main()
